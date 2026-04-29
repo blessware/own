@@ -45,7 +45,7 @@ client.once(Events.ClientReady, async () => {
 
     const button = new ButtonBuilder()
       .setCustomId('access_button')
-      .setLabel('**ACCESS**')
+      .setLabel('ACCESS')
       .setStyle(ButtonStyle.Secondary);
 
     const row = new ActionRowBuilder().addComponents(button);
