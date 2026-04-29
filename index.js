@@ -1,25 +1,23 @@
-import {
+const {
   Client,
   GatewayIntentBits,
-  Partials,
   ActionRowBuilder,
   ButtonBuilder,
   ButtonStyle,
-  EmbedBuilder,
-  ActivityType
-} from "discord.js";
+  Events,
+  EmbedBuilder
+} = require('discord.js');
+
+require('dotenv').config();
 
 const client = new Client({
-  intents: [GatewayIntentBits.Guilds, GatewayIntentBits.GuildMembers],
-  partials: [Partials.Channel]
+  intents: [GatewayIntentBits.Guilds]
 });
 
-// 🔑 CONFIG (EDIT THESE)
-const TOKEN = process.env.TOKEN;
-const CHANNEL_ID = "YOUR_CHANNEL_ID";
-const ROLE_ID = "YOUR_ROLE_ID";
+const ROLE_ID = process.env.ROLE_ID;
+const CHANNEL_ID = process.env.CHANNEL_ID;
 
-client.once("ready", async () => {
+client.once(Events.ClientReady, async () => {
   console.log(`Logged in as ${client.user.tag}`);
 
   // DND status
@@ -31,63 +29,68 @@ client.once("ready", async () => {
     }]
   });
 
-  const channel = await client.channels.fetch(CHANNEL_ID);
+  try {
+    const channel = await client.channels.fetch(CHANNEL_ID);
+    if (!channel) return console.log("Channel not found.");
 
-  // Button
-  const button = new ButtonBuilder()
-    .setCustomId("access_button")
-    .setLabel("+*ACCESS**")
-    .setStyle(ButtonStyle.Secondary);
+    const embed = new EmbedBuilder()
+      .setTitle('**BORDER LINE**')
+      .setDescription('@crueliant')
+      .setColor(0x2f3136); // grey line
 
-  const row = new ActionRowBuilder().addComponents(button);
+    const button = new ButtonBuilder()
+      .setCustomId('access_button')
+      .setLabel('**ACCESS**')
+      .setStyle(ButtonStyle.Secondary); // grey button
 
-  // Embed (clean look like yours)
-  const embed = new EmbedBuilder()
-    .setColor("#2b2d31") // grey line
-    .setTitle("**BORDER LINE**")
-    .setDescription("@crueliant");
+    const row = new ActionRowBuilder().addComponents(button);
 
-  // Send ONLY ONCE (prevents spam on restart)
-  const messages = await channel.messages.fetch({ limit: 10 });
-  const alreadyExists = messages.some(m =>
-    m.author.id === client.user.id &&
-    m.embeds[0]?.title === "BORDER LINE"
-  );
+    // 🚫 Prevent duplicate message
+    const messages = await channel.messages.fetch({ limit: 5 });
+    const exists = messages.find(
+      m => m.author.id === client.user.id && m.components.length > 0
+    );
 
-  if (!alreadyExists) {
-    await channel.send({
-      embeds: [embed],
-      components: [row]
-    });
+    if (!exists) {
+      await channel.send({
+        embeds: [embed],
+        components: [row]
+      });
+      console.log("Access message sent.");
+    } else {
+      console.log("Message already exists.");
+    }
+
+  } catch (err) {
+    console.error("Startup error:", err);
   }
 });
 
-// 🔘 BUTTON HANDLER (FIXES YOUR ERROR)
-client.on("interactionCreate", async (interaction) => {
+client.on(Events.InteractionCreate, async interaction => {
   if (!interaction.isButton()) return;
 
-  if (interaction.customId === "access_button") {
+  if (interaction.customId === 'access_button') {
     try {
       const member = interaction.member;
+
+      if (member.roles.cache.has(ROLE_ID)) {
+        return interaction.reply({
+          content: 'Already granted.',
+          ephemeral: true
+        });
+      }
 
       await member.roles.add(ROLE_ID);
 
       await interaction.reply({
-        content: "Access granted.",
+        content: 'Access granted.',
         ephemeral: true
       });
 
     } catch (err) {
-      console.error(err);
-
-      if (!interaction.replied) {
-        await interaction.reply({
-          content: "Error giving role.",
-          ephemeral: true
-        });
-      }
+      console.error("Button error:", err);
     }
   }
 });
 
-client.login(TOKEN);
+client.login(process.env.TOKEN);
