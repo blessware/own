@@ -5,13 +5,17 @@ const {
   ButtonBuilder,
   ButtonStyle,
   Events,
-  EmbedBuilder
+  EmbedBuilder,
+  ActivityType
 } = require('discord.js');
 
 require('dotenv').config();
 
 const client = new Client({
-  intents: [GatewayIntentBits.Guilds]
+  intents: [
+    GatewayIntentBits.Guilds,
+    GatewayIntentBits.GuildMembers
+  ]
 });
 
 const ROLE_ID = process.env.ROLE_ID;
@@ -20,13 +24,14 @@ const CHANNEL_ID = process.env.CHANNEL_ID;
 client.once(Events.ClientReady, async () => {
   console.log(`Logged in as ${client.user.tag}`);
 
-  // DND status
   client.user.setPresence({
     status: "dnd",
-    activities: [{
-      name: "own",
-      type: ActivityType.Custom
-    }]
+    activities: [
+      {
+        name: "own",
+        type: ActivityType.Custom
+      }
+    ]
   });
 
   try {
@@ -36,17 +41,17 @@ client.once(Events.ClientReady, async () => {
     const embed = new EmbedBuilder()
       .setTitle('**BORDER LINE**')
       .setDescription('@crueliant')
-      .setColor(0x2f3136); // grey line
+      .setColor(0x2f3136);
 
     const button = new ButtonBuilder()
       .setCustomId('access_button')
       .setLabel('**ACCESS**')
-      .setStyle(ButtonStyle.Secondary); // grey button
+      .setStyle(ButtonStyle.Secondary);
 
     const row = new ActionRowBuilder().addComponents(button);
 
-    // 🚫 Prevent duplicate message
-    const messages = await channel.messages.fetch({ limit: 5 });
+    const messages = await channel.messages.fetch({ limit: 10 });
+
     const exists = messages.find(
       m => m.author.id === client.user.id && m.components.length > 0
     );
@@ -72,6 +77,13 @@ client.on(Events.InteractionCreate, async interaction => {
   if (interaction.customId === 'access_button') {
     try {
       const member = interaction.member;
+
+      if (!member) {
+        return interaction.reply({
+          content: "Member not found.",
+          ephemeral: true
+        });
+      }
 
       if (member.roles.cache.has(ROLE_ID)) {
         return interaction.reply({
