@@ -39,8 +39,8 @@ client.once(Events.ClientReady, async () => {
     if (!channel) return console.log("Channel not found.");
 
     const embed = new EmbedBuilder()
-      .setTitle('**BORDER LINE**')
-      .setDescription('@crueliant')
+      .setTitle('**ACCESS THE SERVER**')
+      .setDescription('Clik the button below to see the rest of the server.')
       .setColor(0x2f3136);
 
     const button = new ButtonBuilder()
